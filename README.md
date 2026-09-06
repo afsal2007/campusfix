@@ -101,5 +101,32 @@ Frontend will run at: `http://localhost:5173` (or port indicated by Vite).
 ---
 
 ## 📅 Current Development Status
-- **Day 1: Completed** — Core development foundations, directory scaffolding, PWA config, health-check API, and documentation.
-- **Day 2: Up Next** — Database connectivity, User Models, Authentication (JWT), and registration/login foundations.
+
+- **Day 1: Completed ✅** — Development foundation, directory scaffolding, PWA config, health-check API, and documentation.
+- **Day 2: Completed ✅** — Database foundation, MongoDB Atlas connection, Mongoose models, environment configuration, and database health endpoint.
+- **Day 3: Up Next** — Authentication (JWT), registration, login APIs.
+
+---
+
+## 🗄 Database
+
+- **Provider**: MongoDB Atlas
+- **ORM**: Mongoose
+- **Database name**: `campusfix`
+- **Collections**: `users`, `complaints`, `locations`, `complaintactions`
+- **Documentation**: See [`docs/database.md`](docs/database.md)
+
+### Health Endpoints
+
+| Endpoint        | Description              |
+|-----------------|--------------------------|
+| `GET /`         | API running check        |
+| `GET /api/health` | Database connection status |
+
+### Environment Variables (see `server/.env.example`)
+
+```
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+```
