@@ -53,10 +53,6 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for efficient lookup
-UserSchema.index({ email: 1 });
-UserSchema.index({ registerNumber: 1 });
-
 const User = mongoose.model('User', UserSchema);
 
 export default User;

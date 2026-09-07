@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -15,6 +16,9 @@ app.use(express.json());
 
 // Connect to MongoDB
 connectDB();
+
+// API Routes
+app.use('/api/auth', authRoutes);
 
 // Root Health Check Route
 app.get('/', (req, res) => {
