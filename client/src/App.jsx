@@ -1,62 +1,137 @@
+/**
+ * client/src/App.jsx
+ *
+ * Root application component with routing.
+ * Day 1 / Day 2 / Day 3 functionality is preserved — all existing features
+ * remain intact. Day 4 adds complaint routes and the AuthProvider wrapper.
+ */
+
 import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import ComplaintForm from './pages/ComplaintForm.jsx';
+import MyComplaints from './pages/MyComplaints.jsx';
 import './App.css';
 
+// ── Nav bar ──────────────────────────────────────────────────────────────────
+const Navbar = () => {
+  const { user, logout } = useAuth();
+
+  return (
+    <nav className="navbar">
+      <Link to="/" className="navbar__brand">CampusFix</Link>
+      <div className="navbar__links">
+        {user ? (
+          <>
+            <Link to="/complaints" className="navbar__link">My Complaints</Link>
+            <Link to="/complaints/new" className="navbar__link">Report Issue</Link>
+            <span className="navbar__user">Hi, {user.name.split(' ')[0]}</span>
+            <button className="btn-logout" onClick={logout}>Logout</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="navbar__link">Login</Link>
+            <Link to="/register" className="navbar__link navbar__link--accent">Register</Link>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+};
+
+// ── Home / landing page ──────────────────────────────────────────────────────
+const Home = () => {
+  const { user } = useAuth();
+
+  return (
+    <div className="home-page">
+      <div className="hero">
+        <div className="badge">Campus Complaint Management System</div>
+        <h1>CampusFix</h1>
+        <p className="hero-subtitle">
+          Report campus issues, track their resolution, and keep your campus running smoothly.
+        </p>
+        <div className="hero-actions">
+          {user ? (
+            <>
+              <Link to="/complaints/new" className="btn-primary btn-lg">Report an Issue</Link>
+              <Link to="/complaints" className="btn-secondary btn-lg">View My Complaints</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="btn-primary btn-lg">Sign In</Link>
+              <Link to="/register" className="btn-secondary btn-lg">Create Account</Link>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="features-grid">
+        <div className="feature-card">
+          <span className="feature-icon">📋</span>
+          <h3>Submit Complaints</h3>
+          <p>Report any campus issue — technical, infrastructure, cleanliness, and more.</p>
+        </div>
+        <div className="feature-card">
+          <span className="feature-icon">🔍</span>
+          <h3>Track Progress</h3>
+          <p>Follow up on your complaints and see their current status in real time.</p>
+        </div>
+        <div className="feature-card">
+          <span className="feature-icon">📍</span>
+          <h3>Location Aware</h3>
+          <p>Tag the exact campus location so the right team can respond quickly.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── App with router ──────────────────────────────────────────────────────────
 function App() {
   return (
-    <div className="container">
-      <header className="header">
-        <div className="badge">Day 1 Development Foundation</div>
-        <h1>CampusFix</h1>
-        <p className="subtitle">Campus Complaint Management System</p>
-      </header>
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="app-shell">
+          <Navbar />
+          <main className="app-main">
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
-      <main className="card">
-        <h2>System Status</h2>
-        <ul className="status-list">
-          <li className="status-item">
-            <span className="check">✓</span>
-            <div>
-              <strong>Frontend Configured</strong>
-              <p>React + Vite, React Router, Axios, Dexie.js</p>
-            </div>
-          </li>
-          <li className="status-item">
-            <span className="check">✓</span>
-            <div>
-              <strong>Backend Configured</strong>
-              <p>Node.js, Express, ES Modules, REST Health Endpoint</p>
-            </div>
-          </li>
-          <li className="status-item">
-            <span className="check">✓</span>
-            <div>
-              <strong>PWA Foundation Configured</strong>
-              <p>VitePWA integration & service worker scaffolding</p>
-            </div>
-          </li>
-          <li className="status-item">
-            <span className="check">✓</span>
-            <div>
-              <strong>Project Structure Ready</strong>
-              <p>Modular client/server architecture with complete docs</p>
-            </div>
-          </li>
-        </ul>
+              {/* Protected routes — redirect to /login if unauthenticated */}
+              <Route
+                path="/complaints/new"
+                element={
+                  <ProtectedRoute>
+                    <ComplaintForm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/complaints"
+                element={
+                  <ProtectedRoute>
+                    <MyComplaints />
+                  </ProtectedRoute>
+                }
+              />
 
-        <div className="info-box">
-          <p>
-            <strong>Backend API:</strong> <code>http://localhost:5000/</code>
-          </p>
-          <p>
-            <strong>Status:</strong> Ready for Day 2 Development
-          </p>
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <footer className="app-footer">
+            <p>CampusFix V1 &bull; Student Campus Issue Reporting</p>
+          </footer>
         </div>
-      </main>
-
-      <footer className="footer">
-        <p>CampusFix V1 &bull; Offline-First &bull; Location-Aware</p>
-      </footer>
-    </div>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
