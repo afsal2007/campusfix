@@ -10,16 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-
-// Human-readable label + colour for each status value
-const STATUS_META = {
-  pending:            { label: 'Pending',            colour: '#f59e0b' },
-  assigned:           { label: 'Assigned',           colour: '#3b82f6' },
-  in_progress:        { label: 'In Progress',        colour: '#8b5cf6' },
-  resolved:           { label: 'Resolved',           colour: '#10b981' },
-  rejected:           { label: 'Rejected',           colour: '#ef4444' },
-  follow_up_required: { label: 'Follow-up Required', colour: '#f97316' },
-};
+import StatusBadge from '../components/StatusBadge.jsx';
 
 const PRIORITY_META = {
   low:    { label: 'Low',    colour: '#6b7280' },
@@ -77,29 +68,31 @@ const MyComplaints = () => {
 
       {!loading && !error && complaints.length === 0 && (
         <div className="empty-state">
+          <div className="empty-icon">📭</div>
           <p className="empty-title">No complaints yet</p>
           <p className="empty-sub">
-            Use the button above to report a campus issue.
+            You haven't submitted any complaints. Use the button above to report a campus issue.
           </p>
+          <Link to="/complaints/new" className="btn-primary" style={{ marginTop: '1rem' }}>
+            Report an Issue
+          </Link>
         </div>
       )}
 
       {!loading && complaints.length > 0 && (
         <div className="complaints-list">
           {complaints.map((complaint) => {
-            const statusMeta = STATUS_META[complaint.status] || { label: complaint.status, colour: '#6b7280' };
             const priorityMeta = PRIORITY_META[complaint.priority] || { label: complaint.priority, colour: '#6b7280' };
 
             return (
-              <div key={complaint._id} className="complaint-card">
+              <Link
+                to={`/complaints/${complaint._id}`}
+                key={complaint._id}
+                className="complaint-card complaint-card--link"
+              >
                 <div className="complaint-card__top">
                   <h3 className="complaint-card__title">{complaint.title}</h3>
-                  <span
-                    className="badge-status"
-                    style={{ '--badge-colour': statusMeta.colour }}
-                  >
-                    {statusMeta.label}
-                  </span>
+                  <StatusBadge status={complaint.status} />
                 </div>
 
                 <p className="complaint-card__description">{complaint.description}</p>
@@ -116,8 +109,9 @@ const MyComplaints = () => {
                     {priorityMeta.label} priority
                   </span>
                   <span className="meta-item">🗓 {formatDate(complaint.createdAt)}</span>
+                  <span className="meta-item click-hint">View details &rarr;</span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -127,3 +121,4 @@ const MyComplaints = () => {
 };
 
 export default MyComplaints;
+

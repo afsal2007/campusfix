@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Complaint from '../models/Complaint.js';
 import Location from '../models/Location.js';
 
@@ -120,3 +121,61 @@ export const getMyComplaints = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    Get a single complaint by ID
+ * @route   GET /api/complaints/:id
+ * @access  Private
+ *
+ * SECURITY:
+ * 1. Requires valid authentication (protect middleware).
+ * 2. Students can only retrieve their own complaints.
+ * 3. Never trust client-supplied studentId.
+ */
+export const getComplaintById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    const complaint = await Complaint.findById(id)
+      .populate('student', 'name registerNumber department year className email')
+      .populate('location', 'name building latitude longitude')
+      .populate('assignedTo', 'name email department');
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    // Security check: verify ownership for student role
+    const studentOwnerId = complaint.student?._id
+      ? complaint.student._id.toString()
+      : complaint.student?.toString();
+
+    const requestUserId = req.user._id.toString();
+
+    // If the requester is a student and is not the complaint owner, deny access
+    if (req.user.role === 'student' && studentOwnerId !== requestUserId) {
+      return res.status(403).json({
+        message: 'Access denied. You can only view your own complaints.',
+      });
+    }
+
+    return res.status(200).json({ complaint });
+  } catch (error) {
+    console.error('Error fetching complaint details:', error);
+
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    return res.status(500).json({
+      message: 'Server error while fetching complaint details',
+      error: error.message,
+    });
+  }
+};
+

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createComplaint, getMyComplaints } from '../controllers/complaintController.js';
+import { createComplaint, getMyComplaints, getComplaintById } from '../controllers/complaintController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -10,4 +10,8 @@ router.post('/', protect, createComplaint);
 // GET /api/complaints/my — Get complaints for the logged-in student (protected)
 router.get('/my', protect, getMyComplaints);
 
+// GET /api/complaints/:id — Get details of a single complaint by ID (protected)
+router.get('/:id', protect, getComplaintById);
+
 export default router;
+

@@ -14,6 +14,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import ComplaintForm from './pages/ComplaintForm.jsx';
 import MyComplaints from './pages/MyComplaints.jsx';
+import ComplaintDetails from './pages/ComplaintDetails.jsx';
 import './App.css';
 
 // ── Nav bar ──────────────────────────────────────────────────────────────────
@@ -121,6 +122,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/complaints/:id"
+                element={
+                  <ProtectedRoute>
+                    <ComplaintDetails />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -136,3 +145,4 @@ function App() {
 }
 
 export default App;
+

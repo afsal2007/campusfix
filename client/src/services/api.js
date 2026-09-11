@@ -67,4 +67,11 @@ export const setStoredUser = (user) => {
   localStorage.setItem('campusfix_user', JSON.stringify(user));
 };
 
+/** Fetch a single complaint by ID */
+export const getComplaintById = async (id) => {
+  const response = await api.get(`/complaints/${id}`);
+  return response.data;
+};
+
 export default api;
+
