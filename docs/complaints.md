@@ -142,6 +142,40 @@ The backend filters by `req.user._id` — a student can **never** see another st
 
 ---
 
+### GET /api/complaints
+
+**Get all complaints across the campus.**
+
+- **Auth**: Required (JWT)
+- **Role**: `faculty` or `admin` only (Students receive 403 Forbidden)
+
+Fetches every complaint in the database, used by the Faculty Dashboard.
+
+**Populated fields:**
+
+- `student`: name, registerNumber, department, year, className
+- `location`: name, building
+
+**Sorting:** Newest first (`createdAt: -1`)
+
+**Success Response (200):**
+
+```json
+{
+  "complaints": [ ... ]
+}
+```
+
+**Error Responses:**
+
+| Status | Condition                   |
+| ------ | --------------------------- |
+| 401    | No token / invalid token    |
+| 403    | User role is 'student'      |
+| 500    | Server error                |
+
+---
+
 ### GET /api/locations
 
 **Get all available campus locations.**

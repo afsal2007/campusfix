@@ -73,5 +73,11 @@ export const getComplaintById = async (id) => {
   return response.data;
 };
 
+/** Fetch all complaints (Faculty/Admin only) */
+export const getAllComplaints = async () => {
+  const response = await api.get('/complaints');
+  return response.data;
+};
+
 export default api;
 

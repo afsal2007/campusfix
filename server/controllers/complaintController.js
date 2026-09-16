@@ -179,3 +179,25 @@ export const getComplaintById = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get all complaints
+ * @route   GET /api/complaints
+ * @access  Private (faculty, admin)
+ */
+export const getAllComplaints = async (req, res) => {
+  try {
+    const complaints = await Complaint.find({})
+      .populate('student', 'name registerNumber department year className')
+      .populate('location', 'name building')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ complaints });
+  } catch (error) {
+    console.error('Error fetching all complaints:', error);
+    return res.status(500).json({
+      message: 'Server error while fetching all complaints',
+      error: error.message,
+    });
+  }
+};
+

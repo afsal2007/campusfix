@@ -15,6 +15,7 @@ import Register from './pages/Register.jsx';
 import ComplaintForm from './pages/ComplaintForm.jsx';
 import MyComplaints from './pages/MyComplaints.jsx';
 import ComplaintDetails from './pages/ComplaintDetails.jsx';
+import FacultyDashboard from './pages/FacultyDashboard.jsx';
 import './App.css';
 
 // ── Nav bar ──────────────────────────────────────────────────────────────────
@@ -27,8 +28,14 @@ const Navbar = () => {
       <div className="navbar__links">
         {user ? (
           <>
-            <Link to="/complaints" className="navbar__link">My Complaints</Link>
-            <Link to="/complaints/new" className="navbar__link">Report Issue</Link>
+            {user.role === 'student' ? (
+              <>
+                <Link to="/complaints" className="navbar__link">My Complaints</Link>
+                <Link to="/complaints/new" className="navbar__link">Report Issue</Link>
+              </>
+            ) : (
+              <Link to="/faculty" className="navbar__link">Faculty Dashboard</Link>
+            )}
             <span className="navbar__user">Hi, {user.name.split(' ')[0]}</span>
             <button className="btn-logout" onClick={logout}>Logout</button>
           </>
@@ -127,6 +134,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ComplaintDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/faculty"
+                element={
+                  <ProtectedRoute allowedRoles={['faculty', 'admin']}>
+                    <FacultyDashboard />
                   </ProtectedRoute>
                 }
               />
