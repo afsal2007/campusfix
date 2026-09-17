@@ -239,3 +239,83 @@ MongoDB
    ↓
 status: pending
 ```
+
+### Faculty Management Endpoints (Day 7)
+
+#### `GET /api/users/faculty`
+- **Description**: Get a list of all users with the `faculty` role.
+- **Authentication**: Required (JWT).
+- **Allowed Roles**: `faculty`, `admin`.
+- **Response** (200 OK):
+  ```json
+  {
+    "faculty": [
+      {
+        "_id": "60d...",
+        "name": "Prof. Smith",
+        "email": "smith@campus.edu",
+        "department": "Computer Science"
+      }
+    ]
+  }
+  ```
+- **Error Responses**: `401 Unauthorized`, `403 Forbidden` (if student).
+
+#### `PUT /api/complaints/:id/assign`
+- **Description**: Assign a faculty member to a complaint.
+- **Authentication**: Required (JWT).
+- **Allowed Roles**: `faculty`, `admin`.
+- **Request Body**:
+  ```json
+  {
+    "assignedTo": "60d..." // ObjectId of faculty user
+  }
+  ```
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Complaint assigned successfully",
+    "complaint": { ... }
+  }
+  ```
+- **Error Responses**: `400 Bad Request` (invalid user), `403 Forbidden`, `404 Not Found`.
+
+#### `PUT /api/complaints/:id/status`
+- **Description**: Update the status of a complaint. Valid statuses include `pending`, `assigned`, `in_progress`, `resolved`, `closed`, `rejected`, `follow_up_required`.
+- **Authentication**: Required (JWT).
+- **Allowed Roles**: `faculty`, `admin`.
+- **Request Body**:
+  ```json
+  {
+    "status": "in_progress",
+    "comment": "Optional comment about the status change"
+  }
+  ```
+- **Response** (200 OK):
+  ```json
+  {
+    "message": "Complaint status updated successfully",
+    "complaint": { ... }
+  }
+  ```
+- **Error Responses**: `400 Bad Request` (invalid status), `403 Forbidden`, `404 Not Found`.
+
+#### `POST /api/complaints/:id/actions`
+- **Description**: Add a manual action or comment to a complaint's history.
+- **Authentication**: Required (JWT).
+- **Allowed Roles**: `faculty`, `admin`.
+- **Request Body**:
+  ```json
+  {
+    "action": "Inspection completed",
+    "comment": "Checked the computer lab network connection."
+  }
+  ```
+- **Response** (201 Created):
+  ```json
+  {
+    "message": "Action added successfully",
+    "action": { ... }
+  }
+  ```
+- **Error Responses**: `400 Bad Request` (missing action/comment), `403 Forbidden`, `404 Not Found`.

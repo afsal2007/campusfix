@@ -6,6 +6,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import complaintRoutes from './routes/complaintRoutes.js';
 import locationRoutes from './routes/locationRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/users', userRoutes);
 
 // Root Health Check Route
 app.get('/', (req, res) => {

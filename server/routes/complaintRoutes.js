@@ -1,5 +1,5 @@
 import express from 'express';
-import { createComplaint, getMyComplaints, getComplaintById, getAllComplaints } from '../controllers/complaintController.js';
+import { createComplaint, getMyComplaints, getComplaintById, getAllComplaints, assignComplaint, updateComplaintStatus, addComplaintAction } from '../controllers/complaintController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
@@ -16,6 +16,15 @@ router.get('/', protect, authorizeRoles('faculty', 'admin'), getAllComplaints);
 
 // GET /api/complaints/:id — Get details of a single complaint by ID (protected)
 router.get('/:id', protect, getComplaintById);
+
+// PUT /api/complaints/:id/assign — Assign a complaint (faculty, admin only)
+router.put('/:id/assign', protect, authorizeRoles('faculty', 'admin'), assignComplaint);
+
+// PUT /api/complaints/:id/status — Update complaint status (faculty, admin only)
+router.put('/:id/status', protect, authorizeRoles('faculty', 'admin'), updateComplaintStatus);
+
+// POST /api/complaints/:id/actions — Add a manual action or comment (faculty, admin only)
+router.post('/:id/actions', protect, authorizeRoles('faculty', 'admin'), addComplaintAction);
 
 export default router;
 

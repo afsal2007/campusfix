@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Complaint from '../models/Complaint.js';
+import ComplaintAction from '../models/ComplaintAction.js';
 import Location from '../models/Location.js';
 
 // Valid values (mirrors the schema enums)
@@ -164,7 +165,12 @@ export const getComplaintById = async (req, res) => {
       });
     }
 
-    return res.status(200).json({ complaint });
+    // Fetch action history (oldest first)
+    const actionHistory = await ComplaintAction.find({ complaint: complaint._id })
+      .populate('performedBy', 'name email role department')
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({ complaint, actionHistory });
   } catch (error) {
     console.error('Error fetching complaint details:', error);
 
@@ -201,3 +207,139 @@ export const getAllComplaints = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Assign a faculty member to a complaint
+ * @route   PUT /api/complaints/:id/assign
+ * @access  Private (faculty, admin)
+ */
+export const assignComplaint = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedTo } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
+      return res.status(400).json({ message: 'Invalid assignedTo user ID' });
+    }
+
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    // Verify assignedTo exists and is faculty
+    const User = mongoose.model('User');
+    const facultyUser = await User.findById(assignedTo);
+    if (!facultyUser || facultyUser.role !== 'faculty') {
+      return res.status(400).json({ message: 'User is not a valid faculty member' });
+    }
+
+    complaint.assignedTo = facultyUser._id;
+    if (complaint.status === 'pending') {
+      complaint.status = 'assigned';
+    }
+    await complaint.save();
+
+    await ComplaintAction.create({
+      complaint: complaint._id,
+      performedBy: req.user._id,
+      action: 'assigned',
+      comment: `Assigned to ${facultyUser.name}`
+    });
+
+    return res.status(200).json({ message: 'Complaint assigned successfully', complaint });
+  } catch (error) {
+    console.error('Error assigning complaint:', error);
+    return res.status(500).json({ message: 'Server error while assigning complaint', error: error.message });
+  }
+};
+
+/**
+ * @desc    Update complaint status
+ * @route   PUT /api/complaints/:id/status
+ * @access  Private (faculty, admin)
+ */
+export const updateComplaintStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, comment } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    const validStatuses = ['pending', 'assigned', 'in_progress', 'resolved', 'closed', 'rejected', 'follow_up_required'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    complaint.status = status;
+    if (status === 'resolved') {
+      complaint.resolvedAt = new Date();
+    }
+    await complaint.save();
+
+    await ComplaintAction.create({
+      complaint: complaint._id,
+      performedBy: req.user._id,
+      action: 'status_changed',
+      comment: comment || `Status updated to ${status}`
+    });
+
+    return res.status(200).json({ message: 'Complaint status updated successfully', complaint });
+  } catch (error) {
+    console.error('Error updating status:', error);
+    return res.status(500).json({ message: 'Server error while updating status', error: error.message });
+  }
+};
+
+/**
+ * @desc    Add manual action or comment
+ * @route   POST /api/complaints/:id/actions
+ * @access  Private (faculty, admin)
+ */
+export const addComplaintAction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, comment } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    if (!action || !action.trim()) {
+      return res.status(400).json({ message: 'Action description is required' });
+    }
+    if (!comment || !comment.trim()) {
+      return res.status(400).json({ message: 'Comment is required' });
+    }
+
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    const newAction = await ComplaintAction.create({
+      complaint: complaint._id,
+      performedBy: req.user._id,
+      action: action.trim(),
+      comment: comment.trim()
+    });
+
+    // Touch the complaint to update updatedAt
+    complaint.updatedAt = new Date();
+    await complaint.save();
+
+    return res.status(201).json({ message: 'Action added successfully', action: newAction });
+  } catch (error) {
+    console.error('Error adding action:', error);
+    return res.status(500).json({ message: 'Server error while adding action', error: error.message });
+  }
+};

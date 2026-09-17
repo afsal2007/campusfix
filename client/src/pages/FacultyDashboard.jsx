@@ -1,4 +1,4 @@
-﻿/**
+/**
  * client/src/pages/FacultyDashboard.jsx
  *
  * Faculty/Admin Dashboard - Day 6
@@ -8,10 +8,12 @@
  *  - Recent complaints list with student and location details
  *
  * Access: faculty and admin only.
+ * 
  * Auth: uses getAllComplaints() which attaches JWT automatically via interceptor.
  */
 
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getAllComplaints } from '../services/api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 
@@ -160,10 +162,12 @@ const FacultyDashboard = () => {
               const student  = complaint.student  || {};
               const location = complaint.location || {};
               return (
-                <article
+                <Link
+                  to={`/complaints/${complaint._id}`}
                   key={complaint._id}
                   className="fac-complaint-card"
                   aria-label={'Complaint: ' + complaint.title}
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
                 >
                   <div className="fac-complaint-card__header">
                     <h3 className="fac-complaint-card__title">{complaint.title}</h3>
@@ -202,8 +206,14 @@ const FacultyDashboard = () => {
                       <span className="fac-detail-item__label">Submitted</span>
                       <span className="fac-detail-item__value">{formatDate(complaint.createdAt)}</span>
                     </div>
+                    <div className="fac-detail-item">
+                      <span className="fac-detail-item__label">Assigned</span>
+                      <span className="fac-detail-item__value">
+                        {complaint.assignedTo ? complaint.assignedTo.name : 'Unassigned'}
+                      </span>
+                    </div>
                   </div>
-                </article>
+                </Link>
               );
             })}
           </div>

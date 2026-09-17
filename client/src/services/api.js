@@ -79,5 +79,29 @@ export const getAllComplaints = async () => {
   return response.data;
 };
 
+/** Fetch faculty users (Faculty/Admin only) */
+export const getFacultyUsers = async () => {
+  const response = await api.get('/users/faculty');
+  return response.data;
+};
+
+/** Assign a complaint to a faculty member */
+export const assignComplaint = async (id, assignedTo) => {
+  const response = await api.put(`/complaints/${id}/assign`, { assignedTo });
+  return response.data;
+};
+
+/** Update the status of a complaint */
+export const updateComplaintStatus = async (id, status, comment) => {
+  const response = await api.put(`/complaints/${id}/status`, { status, comment });
+  return response.data;
+};
+
+/** Add a manual action/comment to a complaint */
+export const addComplaintAction = async (id, action, comment) => {
+  const response = await api.post(`/complaints/${id}/actions`, { action, comment });
+  return response.data;
+};
+
 export default api;
 
