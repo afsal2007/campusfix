@@ -73,9 +73,29 @@ export const getComplaintById = async (id) => {
   return response.data;
 };
 
+// Fetch complaints assigned to the logged-in faculty
+export const getFacultyComplaints = async () => {
+  const response = await api.get('/complaints/faculty/assigned');
+  return response.data;
+};
+
 /** Fetch all complaints (Faculty/Admin only) */
 export const getAllComplaints = async () => {
   const response = await api.get('/complaints');
+  return response.data;
+};
+
+// ==========================================
+// ADMIN DASHBOARD
+// ==========================================
+
+export const getAdminDashboard = async () => {
+  const response = await api.get('/admin/dashboard');
+  return response.data;
+};
+
+export const getRecurringIssues = async () => {
+  const response = await api.get('/admin/recurring-issues');
   return response.data;
 };
 

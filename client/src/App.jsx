@@ -16,7 +16,9 @@ import ComplaintForm from './pages/ComplaintForm.jsx';
 import MyComplaints from './pages/MyComplaints.jsx';
 import ComplaintDetails from './pages/ComplaintDetails.jsx';
 import FacultyDashboard from './pages/FacultyDashboard.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
 import './App.css';
+
 
 // ── Nav bar ──────────────────────────────────────────────────────────────────
 const Navbar = () => {
@@ -28,16 +30,24 @@ const Navbar = () => {
       <div className="navbar__links">
         {user ? (
           <>
-            {user.role === 'student' ? (
+            {user.role === 'student' && (
               <>
                 <Link to="/complaints" className="navbar__link">My Complaints</Link>
                 <Link to="/complaints/new" className="navbar__link">Report Issue</Link>
               </>
-            ) : (
+            )}
+            {user.role === 'faculty' && (
               <Link to="/faculty" className="navbar__link">Faculty Dashboard</Link>
+            )}
+            {user.role === 'admin' && (
+              <>
+                <Link to="/admin" className="navbar__link">Admin Dashboard</Link>
+                <Link to="/faculty" className="navbar__link">Faculty Dashboard</Link>
+              </>
             )}
             <span className="navbar__user">Hi, {user.name.split(' ')[0]}</span>
             <button className="btn-logout" onClick={logout}>Logout</button>
+
           </>
         ) : (
           <>
@@ -145,8 +155,17 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Catch-all */}
+
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
