@@ -343,3 +343,44 @@ export const addComplaintAction = async (req, res) => {
     return res.status(500).json({ message: 'Server error while adding action', error: error.message });
   }
 };
+
+/**
+ * @desc    Add follow-up action without modifying status
+ * @route   POST /api/complaints/:id/follow-up
+ * @access  Private (faculty, admin)
+ */
+export const addFollowUpAction = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { comment } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).json({ message: 'Comment is required for follow-up' });
+    }
+
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    const newAction = await ComplaintAction.create({
+      complaint: complaint._id,
+      performedBy: req.user._id,
+      action: 'follow_up',
+      comment: comment.trim()
+    });
+
+    complaint.updatedAt = new Date();
+    complaint.followUpDate = new Date();
+    await complaint.save();
+
+    return res.status(201).json({ message: 'Follow-up action recorded successfully', action: newAction, complaint });
+  } catch (error) {
+    console.error('Error adding follow-up action:', error);
+    return res.status(500).json({ message: 'Server error while adding follow-up action', error: error.message });
+  }
+};

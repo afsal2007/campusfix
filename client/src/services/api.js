@@ -123,5 +123,16 @@ export const addComplaintAction = async (id, action, comment) => {
   return response.data;
 };
 
-export default api;
+/** Get follow up required complaints (Admin only) */
+export const getFollowUpComplaints = async () => {
+  const response = await api.get('/admin/follow-ups');
+  return response.data;
+};
 
+/** Record a follow up action on a complaint (Faculty/Admin only) */
+export const recordFollowUp = async (id, comment) => {
+  const response = await api.post(`/complaints/${id}/follow-up`, { comment });
+  return response.data;
+};
+
+export default api;

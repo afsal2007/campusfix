@@ -1,5 +1,5 @@
 import express from 'express';
-import { createComplaint, getMyComplaints, getComplaintById, getAllComplaints, assignComplaint, updateComplaintStatus, addComplaintAction } from '../controllers/complaintController.js';
+import { createComplaint, getMyComplaints, getComplaintById, getAllComplaints, assignComplaint, updateComplaintStatus, addComplaintAction, addFollowUpAction } from '../controllers/complaintController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
@@ -26,5 +26,7 @@ router.put('/:id/status', protect, authorizeRoles('faculty', 'admin'), updateCom
 // POST /api/complaints/:id/actions — Add a manual action or comment (faculty, admin only)
 router.post('/:id/actions', protect, authorizeRoles('faculty', 'admin'), addComplaintAction);
 
-export default router;
+// POST /api/complaints/:id/follow-up — Add a follow-up action (faculty, admin only)
+router.post('/:id/follow-up', protect, authorizeRoles('faculty', 'admin'), addFollowUpAction);
 
+export default router;

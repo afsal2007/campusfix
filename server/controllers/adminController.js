@@ -142,3 +142,35 @@ export const getRecurringIssues = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 };
+
+export const getFollowUpComplaints = async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const complaints = await Complaint.find({
+      status: { $nin: ['resolved', 'rejected'] },
+      createdAt: { $lte: thirtyDaysAgo }
+    })
+      .sort({ createdAt: 1 })
+      .populate('student', 'name email registerNumber department year className')
+      .populate('assignedTo', 'name email department')
+      .populate('location', 'name building');
+
+    const result = complaints.map((complaint) => {
+      const msOpen = new Date().getTime() - new Date(complaint.createdAt).getTime();
+      const daysOpen = Math.floor(msOpen / (1000 * 60 * 60 * 24));
+      
+      return {
+        ...complaint.toObject(),
+        daysOpen,
+        followUpRequired: true,
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getFollowUpComplaints:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};

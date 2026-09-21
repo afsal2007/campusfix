@@ -13,7 +13,8 @@ import {
   getFacultyUsers, 
   assignComplaint, 
   updateComplaintStatus, 
-  addComplaintAction 
+  addComplaintAction,
+  recordFollowUp
 } from '../services/api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -53,6 +54,7 @@ const ComplaintDetails = () => {
   const [statusComment, setStatusComment] = useState('');
   const [actionDesc, setActionDesc] = useState('');
   const [actionComment, setActionComment] = useState('');
+  const [followUpComment, setFollowUpComment] = useState('');
 
   const isFacultyOrAdmin = user && (user.role === 'faculty' || user.role === 'admin');
 
@@ -139,6 +141,20 @@ const ComplaintDetails = () => {
       fetchDetails();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to add action');
+    }
+  };
+
+  const handleRecordFollowUp = async () => {
+    if (!followUpComment.trim()) {
+      return alert('Comment is required for follow-up');
+    }
+    try {
+      await recordFollowUp(id, followUpComment);
+      alert('Follow-up recorded successfully');
+      setFollowUpComment('');
+      fetchDetails();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to record follow-up');
     }
   };
 
@@ -239,6 +255,12 @@ const ComplaintDetails = () => {
 
   const hasActionOrResolution = complaint.actionTaken || complaint.resolution;
 
+  // Compute days open
+  const msOpen = new Date().getTime() - new Date(complaint.createdAt).getTime();
+  const daysOpen = Math.floor(msOpen / (1000 * 60 * 60 * 24));
+  const isUnresolved = !['resolved', 'rejected'].includes(complaint.status);
+  const followUpRequired = isUnresolved && daysOpen >= 30;
+
   return (
     <div className="page-container">
       <div className="back-nav">
@@ -262,11 +284,20 @@ const ComplaintDetails = () => {
               {priorityMeta.label} Priority
             </span>
             <StatusBadge status={complaint.status} />
+            {followUpRequired && (
+              <span className="priority-badge priority-urgent" style={{ marginLeft: '0.5rem', fontWeight: 'bold' }}>
+                ⚠️ Follow-up Required
+              </span>
+            )}
           </div>
         </div>
 
         <h1 className="details-title">{complaint.title}</h1>
         <p className="details-id-text">Complaint ID: {complaint._id}</p>
+        
+        <div style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.9rem' }}>
+          <strong>Days Open:</strong> {daysOpen}
+        </div>
       </div>
 
       <div className="details-grid">
@@ -371,7 +402,7 @@ const ComplaintDetails = () => {
                 </div>
               </div>
 
-              <div>
+              <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Add Manual Action / Comment</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <input 
@@ -388,6 +419,19 @@ const ComplaintDetails = () => {
                     style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', minHeight: '80px' }}
                   ></textarea>
                   <button className="btn-primary" onClick={handleAddAction} style={{ alignSelf: 'flex-start' }}>Add Action</button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>Record Follow-up</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <textarea 
+                    placeholder="Follow-up comment (e.g., 'Checked with maintenance, parts delayed')" 
+                    value={followUpComment}
+                    onChange={e => setFollowUpComment(e.target.value)}
+                    style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #cbd5e1', minHeight: '80px' }}
+                  ></textarea>
+                  <button className="btn-secondary" onClick={handleRecordFollowUp} style={{ alignSelf: 'flex-start' }}>Record Follow-up</button>
                 </div>
               </div>
 

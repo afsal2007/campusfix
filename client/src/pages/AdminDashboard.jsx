@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAdminDashboard, getRecurringIssues } from '../services/api';
+import { getAdminDashboard, getRecurringIssues, getFollowUpComplaints } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [recurring, setRecurring] = useState([]);
+  const [followUpComplaints, setFollowUpComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,12 +18,14 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       setError('');
-      const [dashboardData, recurringData] = await Promise.all([
+      const [dashboardData, recurringData, followUpData] = await Promise.all([
         getAdminDashboard(),
-        getRecurringIssues()
+        getRecurringIssues(),
+        getFollowUpComplaints()
       ]);
       setStats(dashboardData);
       setRecurring(recurringData);
+      setFollowUpComplaints(followUpData);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load dashboard data');
     } finally {
@@ -246,6 +249,68 @@ const AdminDashboard = () => {
                 <div className="admin-complaint-actions">
                   <Link to={`/complaints/${complaint._id}`} className="btn-secondary btn-sm">
                     Manage Complaint
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Follow-up Required */}
+      <section className="admin-section">
+        <h3>Follow-up Required (30+ Days Unresolved)</h3>
+        {followUpComplaints.length === 0 ? (
+          <p className="empty-state">No complaints currently require follow-up.</p>
+        ) : (
+          <div className="admin-complaints-list">
+            {followUpComplaints.map((complaint) => (
+              <div key={complaint._id} className="admin-complaint-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+                <div className="admin-complaint-header">
+                  <h4>
+                    <Link to={`/complaints/${complaint._id}`}>{complaint.title}</Link>
+                  </h4>
+                  <StatusBadge status={complaint.status} />
+                </div>
+                <div className="admin-complaint-details">
+                  <div className="detail-item">
+                    <span className="label" style={{color: '#d97706', fontWeight: 'bold'}}>Days Open:</span>
+                    <span style={{color: '#d97706', fontWeight: 'bold'}}>{complaint.daysOpen} days</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Category:</span>
+                    <span className="capitalize">{complaint.category}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Location:</span>
+                    <span>
+                      {complaint.location
+                        ? `${complaint.location.name} (${complaint.location.building})`
+                        : 'Unknown'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Priority:</span>
+                    <span className={`priority-badge priority-${complaint.priority}`}>
+                      {complaint.priority}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Student:</span>
+                    <span>{complaint.student?.name || 'Unknown'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Assigned To:</span>
+                    <span>{complaint.assignedTo ? complaint.assignedTo.name : 'Unassigned'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Reported:</span>
+                    <span>{new Date(complaint.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="admin-complaint-actions">
+                  <Link to={`/complaints/${complaint._id}`} className="btn-secondary btn-sm">
+                    Record Follow-up
                   </Link>
                 </div>
               </div>
