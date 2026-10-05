@@ -6,7 +6,7 @@
  * remain intact. Day 4 adds complaint routes and the AuthProvider wrapper.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -17,6 +17,7 @@ import MyComplaints from './pages/MyComplaints.jsx';
 import ComplaintDetails from './pages/ComplaintDetails.jsx';
 import FacultyDashboard from './pages/FacultyDashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import { syncPendingComplaints } from './services/syncService.js';
 import './App.css';
 
 
@@ -57,6 +58,40 @@ const Navbar = () => {
         )}
       </div>
     </nav>
+  );
+};
+
+// ── Offline Indicator ────────────────────────────────────────────────────────
+const OfflineIndicator = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  React.useEffect(() => {
+    const handleOnline = async () => {
+      setIsOnline(true);
+      await syncPendingComplaints();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial sync check if already online
+    if (navigator.onLine) {
+      syncPendingComplaints();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  if (isOnline) return null;
+
+  return (
+    <div style={{ background: '#f59e0b', color: '#fff', textAlign: 'center', padding: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
+      Offline — complaints will be saved locally
+    </div>
   );
 };
 
@@ -114,6 +149,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <div className="app-shell">
+          <OfflineIndicator />
           <Navbar />
           <main className="app-main">
             <Routes>

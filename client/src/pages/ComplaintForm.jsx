@@ -11,7 +11,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api.js';
+import api, { getStoredUser } from '../services/api.js';
+import db from '../db/database.js';
+import { calculateDistance } from '../utils/distance.js';
 
 const CATEGORIES = [
   { value: 'academic', label: 'Academic' },
@@ -58,10 +60,32 @@ const ComplaintForm = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await api.get('/locations');
-        setLocations(response.data.locations);
-      } catch {
-        setLocationsError('Failed to load campus locations. Please refresh the page.');
+        if (navigator.onLine) {
+          const response = await api.get('/locations');
+          const fetchedLocations = response.data.locations;
+          setLocations(fetchedLocations);
+          // Cache to IndexedDB
+          await db.locations.clear();
+          await db.locations.bulkPut(
+            fetchedLocations.map(loc => ({ ...loc, id: loc._id }))
+          );
+        } else {
+          // Offline: load from cache
+          const cachedLocations = await db.locations.toArray();
+          if (cachedLocations.length > 0) {
+            setLocations(cachedLocations);
+          } else {
+            setLocationsError('Campus locations are not available offline yet. Connect to the internet once to download campus locations.');
+          }
+        }
+      } catch (error) {
+        // Fallback to cache on error
+        const cachedLocations = await db.locations.toArray();
+        if (cachedLocations.length > 0) {
+          setLocations(cachedLocations);
+        } else {
+          setLocationsError('Failed to load campus locations. Please refresh the page.');
+        }
       }
     };
 
@@ -85,14 +109,42 @@ const ComplaintForm = () => {
         setUserLocation({ latitude, longitude });
 
         try {
-          const response = await api.verifyLocation(formData.location, latitude, longitude);
-          if (response.verified) {
-            setVerificationStatus('SUCCESS');
-            setVerificationData(response);
+          if (navigator.onLine) {
+            const response = await api.verifyLocation(formData.location, latitude, longitude);
+            if (response.verified) {
+              setVerificationStatus('SUCCESS');
+              setVerificationData(response);
+            } else {
+              setVerificationStatus('FAILURE');
+              setVerificationError('You are outside the allowed area.');
+              setVerificationData(response);
+            }
           } else {
-            setVerificationStatus('FAILURE');
-            setVerificationError('You are outside the allowed area.');
-            setVerificationData(response);
+            // Local offline verification
+            const selectedLoc = locations.find(loc => (loc._id || loc.id) === formData.location);
+            if (!selectedLoc) {
+              setVerificationStatus('FAILURE');
+              setVerificationError('Location data not found in local cache.');
+              return;
+            }
+            const dist = calculateDistance(latitude, longitude, selectedLoc.latitude, selectedLoc.longitude);
+            const isVerified = dist <= selectedLoc.allowedRadius;
+            
+            const localResponse = {
+              verified: isVerified,
+              distance: Math.round(dist),
+              allowedRadius: selectedLoc.allowedRadius,
+              location: selectedLoc
+            };
+            
+            if (isVerified) {
+              setVerificationStatus('SUCCESS');
+              setVerificationData(localResponse);
+            } else {
+              setVerificationStatus('FAILURE');
+              setVerificationError('You are outside the allowed area (checked locally).');
+              setVerificationData(localResponse);
+            }
           }
         } catch (error) {
           setVerificationStatus('FAILURE');
@@ -160,18 +212,38 @@ const ComplaintForm = () => {
 
     setLoading(true);
     try {
-      // NOTE: No student ID is sent. The backend uses req.user._id from the JWT.
-      await api.post('/complaints', {
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        priority,
-        location,
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude
-      });
-
-      setSubmitSuccess('Complaint submitted successfully!');
+      if (navigator.onLine) {
+        // NOTE: No student ID is sent. The backend uses req.user._id from the JWT.
+        await api.post('/complaints', {
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          priority,
+          location,
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude
+        });
+        setSubmitSuccess('Complaint submitted successfully!');
+      } else {
+        // Offline save
+        const clientRequestId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+        const user = getStoredUser();
+        await db.pendingComplaints.add({
+          clientRequestId,
+          studentId: user?._id || user?.id,
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          priority,
+          location,
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          createdAt: new Date().toISOString(),
+          syncStatus: 'pending',
+          syncAttempts: 0
+        });
+        setSubmitSuccess('Complaint saved offline. It will be submitted automatically when you\'re back online.');
+      }
 
       // Reset form
       setFormData({
@@ -186,7 +258,7 @@ const ComplaintForm = () => {
       setUserLocation(null);
 
       // Redirect to My Complaints after a short delay
-      setTimeout(() => navigate('/complaints'), 1500);
+      setTimeout(() => navigate('/complaints'), 2000);
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to submit complaint. Please try again.';
       setSubmitError(msg);
@@ -271,7 +343,7 @@ const ComplaintForm = () => {
                 {locations.length === 0 ? 'Loading locations…' : 'Select location'}
               </option>
               {locations.map((loc) => (
-                <option key={loc._id} value={loc._id}>
+                <option key={loc._id || loc.id} value={loc._id || loc.id}>
                   {loc.name}{loc.building !== loc.name ? ` — ${loc.building}` : ''}
                 </option>
               ))}

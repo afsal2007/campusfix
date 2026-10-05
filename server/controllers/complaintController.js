@@ -28,7 +28,7 @@ const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
  */
 export const createComplaint = async (req, res) => {
   try {
-    const { location, title, description, category, priority, latitude, longitude } = req.body;
+    const { location, title, description, category, priority, latitude, longitude, clientRequestId } = req.body;
 
     // --- Validate required fields ---
     if (!title || !title.trim()) {
@@ -86,12 +86,27 @@ export const createComplaint = async (req, res) => {
       });
     }
 
+    // --- Idempotency check ---
+    if (clientRequestId) {
+      const existingComplaint = await Complaint.findOne({ 
+        clientRequestId,
+        student: req.user._id // Security: ensure it belongs to this student
+      });
+      if (existingComplaint) {
+        return res.status(200).json({
+          message: 'Complaint already exists (duplicate request)',
+          complaint: existingComplaint
+        });
+      }
+    }
+
     // --- Create complaint — student always comes from the JWT ---
     const complaint = await Complaint.create({
       student: req.user._id,   // SECURITY: Never from req.body
       location: locationDoc._id,
       latitude,
       longitude,
+      clientRequestId: clientRequestId || null,
       title: title.trim(),
       description: description.trim(),
       category,

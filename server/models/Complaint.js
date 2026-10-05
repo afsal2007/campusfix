@@ -45,6 +45,10 @@ const ComplaintSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    clientRequestId: {
+      type: String,
+      default: null,
+    },
     status: {
       type: String,
       enum: [
@@ -99,6 +103,7 @@ ComplaintSchema.index({ category: 1 });
 ComplaintSchema.index({ createdAt: -1 });
 // Compound index: efficient student complaint history sorted newest first
 ComplaintSchema.index({ student: 1, createdAt: -1 });
+ComplaintSchema.index({ clientRequestId: 1 }, { unique: true, sparse: true });
 
 const Complaint = mongoose.model('Complaint', ComplaintSchema);
 
