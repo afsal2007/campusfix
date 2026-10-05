@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Complaint from '../models/Complaint.js';
 import ComplaintAction from '../models/ComplaintAction.js';
 import Location from '../models/Location.js';
+import { calculateDistance } from '../utils/distance.js';
 
 // Valid values (mirrors the schema enums)
 const VALID_CATEGORIES = [
@@ -27,7 +28,7 @@ const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
  */
 export const createComplaint = async (req, res) => {
   try {
-    const { location, title, description, category, priority } = req.body;
+    const { location, title, description, category, priority, latitude, longitude } = req.body;
 
     // --- Validate required fields ---
     if (!title || !title.trim()) {
@@ -69,10 +70,28 @@ export const createComplaint = async (req, res) => {
       });
     }
 
+    // --- Backend Location Verification ---
+    if (latitude === undefined || longitude === undefined || typeof latitude !== 'number' || typeof longitude !== 'number') {
+      return res.status(400).json({ message: 'Valid latitude and longitude are required' });
+    }
+
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return res.status(400).json({ message: 'Coordinates are out of bounds' });
+    }
+
+    const distance = calculateDistance(latitude, longitude, locationDoc.latitude, locationDoc.longitude);
+    if (distance > locationDoc.allowedRadius) {
+      return res.status(403).json({
+        message: 'Location verification failed. You must be near the selected campus location to submit this complaint.'
+      });
+    }
+
     // --- Create complaint — student always comes from the JWT ---
     const complaint = await Complaint.create({
       student: req.user._id,   // SECURITY: Never from req.body
       location: locationDoc._id,
+      latitude,
+      longitude,
       title: title.trim(),
       description: description.trim(),
       category,

@@ -1368,3 +1368,43 @@ a:hover {
   justify-content: flex-end;
   margin-top: 8px;
 }
+
+/* =========================================================
+   Location Verification
+   ========================================================= */
+.verification-card {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.verification-card.success {
+  background: var(--success-light);
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.verification-card.failure {
+  background: var(--error-light);
+  border-color: #fecaca;
+  color: var(--error);
+}
+
+.verification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.verification-content p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+

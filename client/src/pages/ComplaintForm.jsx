@@ -49,6 +49,11 @@ const ComplaintForm = () => {
   const [submitSuccess, setSubmitSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [verificationStatus, setVerificationStatus] = useState('INITIAL'); // INITIAL, LOADING, SUCCESS, FAILURE
+  const [verificationData, setVerificationData] = useState(null);
+  const [verificationError, setVerificationError] = useState('');
+  const [userLocation, setUserLocation] = useState(null);
+
   // Load campus locations when the component mounts
   useEffect(() => {
     const fetchLocations = async () => {
@@ -63,10 +68,64 @@ const ComplaintForm = () => {
     fetchLocations();
   }, []);
 
+  // Handle location verification
+  const handleVerifyLocation = () => {
+    setVerificationStatus('LOADING');
+    setVerificationError('');
+
+    if (!navigator.geolocation) {
+      setVerificationStatus('FAILURE');
+      setVerificationError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ latitude, longitude });
+
+        try {
+          const response = await api.verifyLocation(formData.location, latitude, longitude);
+          if (response.verified) {
+            setVerificationStatus('SUCCESS');
+            setVerificationData(response);
+          } else {
+            setVerificationStatus('FAILURE');
+            setVerificationError('You are outside the allowed area.');
+            setVerificationData(response);
+          }
+        } catch (error) {
+          setVerificationStatus('FAILURE');
+          setVerificationError(error.response?.data?.message || 'Verification failed.');
+        }
+      },
+      (error) => {
+        setVerificationStatus('FAILURE');
+        let msg = 'Failed to get your location.';
+        if (error.code === error.PERMISSION_DENIED) {
+          msg = 'Location permission is required to verify that you are near the selected campus location.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          msg = 'Location information is unavailable.';
+        } else if (error.code === error.TIMEOUT) {
+          msg = 'The request to get user location timed out.';
+        }
+        setVerificationError(msg);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setSubmitError('');
     setSubmitSuccess('');
+    if (name === 'location') {
+      setVerificationStatus('INITIAL');
+      setVerificationData(null);
+      setVerificationError('');
+      setUserLocation(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -94,6 +153,11 @@ const ComplaintForm = () => {
       return;
     }
 
+    if (verificationStatus !== 'SUCCESS' || !userLocation) {
+      setSubmitError('Please verify your location first.');
+      return;
+    }
+
     setLoading(true);
     try {
       // NOTE: No student ID is sent. The backend uses req.user._id from the JWT.
@@ -103,6 +167,8 @@ const ComplaintForm = () => {
         category,
         priority,
         location,
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
       });
 
       setSubmitSuccess('Complaint submitted successfully!');
@@ -115,6 +181,9 @@ const ComplaintForm = () => {
         priority: 'medium',
         location: '',
       });
+      setVerificationStatus('INITIAL');
+      setVerificationData(null);
+      setUserLocation(null);
 
       // Redirect to My Complaints after a short delay
       setTimeout(() => navigate('/complaints'), 1500);
@@ -209,6 +278,47 @@ const ComplaintForm = () => {
             </select>
           </div>
 
+          {/* Location Verification Card */}
+          {formData.location && (
+            <div className={`verification-card ${verificationStatus.toLowerCase()}`}>
+              {verificationStatus === 'INITIAL' && (
+                <div className="verification-content">
+                  <p>Location not verified</p>
+                  <button type="button" className="btn-secondary" onClick={handleVerifyLocation}>
+                    Verify My Location
+                  </button>
+                </div>
+              )}
+              {verificationStatus === 'LOADING' && (
+                <div className="verification-content">
+                  <p>Checking your location...</p>
+                </div>
+              )}
+              {verificationStatus === 'SUCCESS' && verificationData && (
+                <div className="verification-content success">
+                  <p><strong>Location verified ✓</strong></p>
+                  <p>Distance: {verificationData.distance} m</p>
+                  <p>Allowed radius: {verificationData.allowedRadius} m</p>
+                </div>
+              )}
+              {verificationStatus === 'FAILURE' && (
+                <div className="verification-content failure">
+                  <p><strong>Location verification failed.</strong></p>
+                  <p>{verificationError}</p>
+                  {verificationData && (
+                    <>
+                      <p>Distance: {verificationData.distance} m</p>
+                      <p>Allowed radius: {verificationData.allowedRadius} m</p>
+                    </>
+                  )}
+                  <button type="button" className="btn-secondary mt-2" onClick={handleVerifyLocation}>
+                    Try Again
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Description */}
           <div className="form-group">
             <label htmlFor="description">Description</label>
@@ -231,7 +341,7 @@ const ComplaintForm = () => {
             >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading || verificationStatus !== 'SUCCESS'}>
               {loading ? 'Submitting…' : 'Submit Complaint'}
             </button>
           </div>

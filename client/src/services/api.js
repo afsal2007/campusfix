@@ -135,4 +135,10 @@ export const recordFollowUp = async (id, comment) => {
   return response.data;
 };
 
+/** Verify a location before submitting a complaint */
+export const verifyLocation = async (locationId, latitude, longitude) => {
+  const response = await api.post('/locations/verify', { locationId, latitude, longitude });
+  return response.data;
+};
+
 export default api;
