@@ -62,7 +62,9 @@ const Register = () => {
       login(token, user);
       navigate('/complaints');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+      const msg = !navigator.onLine 
+        ? "You're offline. Please connect to the internet to register." 
+        : (err.response?.data?.message || 'Something went wrong. Please try again.');
       setError(msg);
     } finally {
       setLoading(false);

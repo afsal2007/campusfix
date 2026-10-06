@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import NetworkStatus from './components/NetworkStatus.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import ComplaintForm from './pages/ComplaintForm.jsx';
@@ -61,39 +62,6 @@ const Navbar = () => {
   );
 };
 
-// ── Offline Indicator ────────────────────────────────────────────────────────
-const OfflineIndicator = () => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  
-  React.useEffect(() => {
-    const handleOnline = async () => {
-      setIsOnline(true);
-      await syncPendingComplaints();
-    };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Initial sync check if already online
-    if (navigator.onLine) {
-      syncPendingComplaints();
-    }
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  if (isOnline) return null;
-
-  return (
-    <div style={{ background: '#f59e0b', color: '#fff', textAlign: 'center', padding: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-      Offline — complaints will be saved locally
-    </div>
-  );
-};
 
 // ── Home / landing page ──────────────────────────────────────────────────────
 const Home = () => {
@@ -149,7 +117,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <div className="app-shell">
-          <OfflineIndicator />
+          <NetworkStatus />
           <Navbar />
           <main className="app-main">
             <Routes>

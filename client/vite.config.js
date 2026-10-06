@@ -12,8 +12,12 @@ export default defineConfig({
       manifest: {
         name: 'CampusFix',
         short_name: 'CampusFix',
-        description: 'Campus Complaint Management System',
-        theme_color: '#4f46e5',
+        description: 'Offline-first campus complaint management system',
+        display: 'standalone',
+        theme_color: '#aa3bff',
+        background_color: '#ffffff',
+        start_url: '/',
+        scope: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -24,6 +28,12 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'apple touch icon'
           }
         ]
       }

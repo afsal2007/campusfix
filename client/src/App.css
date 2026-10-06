@@ -1408,3 +1408,23 @@ a:hover {
   margin-top: 8px;
 }
 
+/* ── Network Status ─────────────────────────────────────────── */
+.network-status {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fff;
+  z-index: 1000;
+  position: sticky;
+  top: 0;
+}
+
+.network-status--offline {
+  background: var(--warning);
+}
+
+.network-status--syncing {
+  background: var(--success);
+}
+

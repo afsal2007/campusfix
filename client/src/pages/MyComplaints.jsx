@@ -106,7 +106,7 @@ const MyComplaints = () => {
           <div className="empty-icon">📭</div>
           <p className="empty-title">No complaints yet</p>
           <p className="empty-sub">
-            You haven't submitted any complaints. Use the button above to report a campus issue.
+            You haven't submitted any complaints yet. Use the button above to report a campus issue.
           </p>
           <Link to="/complaints/new" className="btn-primary" style={{ marginTop: '1rem' }}>
             Report an Issue
@@ -140,13 +140,18 @@ const MyComplaints = () => {
           {/* Render local complaints first */}
           {localComplaints.map((complaint) => {
             const priorityMeta = PRIORITY_META[complaint.priority] || { label: complaint.priority, colour: '#6b7280' };
-            const statusLabel = complaint.syncStatus === 'failed' ? 'Sync Failed' : 'Pending Sync';
+            const isSyncing = syncing;
+            let statusLabel = 'Waiting for connection';
+            if (navigator.onLine) statusLabel = 'Pending sync';
+            if (isSyncing) statusLabel = 'Syncing...';
+            if (complaint.syncStatus === 'failed') statusLabel = 'Sync failed';
+            
             const statusColor = complaint.syncStatus === 'failed' ? '#ef4444' : '#f59e0b';
             
             return (
-              <div key={complaint.clientRequestId} className="complaint-card" style={{ borderLeft: '4px solid #94a3b8' }}>
+              <div key={complaint.clientRequestId} className="complaint-card" style={{ borderLeft: `4px solid ${statusColor}` }}>
                 <div className="complaint-card__top">
-                  <h3 className="complaint-card__title">{complaint.title} (Offline)</h3>
+                  <h3 className="complaint-card__title">{complaint.title}</h3>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '0.25rem 0.5rem', borderRadius: '9999px', background: statusColor, color: 'white' }}>
                     {statusLabel}
                   </span>

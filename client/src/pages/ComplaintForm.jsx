@@ -260,7 +260,9 @@ const ComplaintForm = () => {
       // Redirect to My Complaints after a short delay
       setTimeout(() => navigate('/complaints'), 2000);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to submit complaint. Please try again.';
+      const msg = !navigator.onLine 
+        ? "You're offline. Your complaint can still be saved and synced when you're back online." 
+        : (err.response?.data?.message || 'Something went wrong. Please try again.');
       setSubmitError(msg);
     } finally {
       setLoading(false);

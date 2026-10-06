@@ -27,7 +27,11 @@ const AdminDashboard = () => {
       setRecurring(recurringData);
       setFollowUpComplaints(followUpData);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load dashboard data');
+      setError(
+        !navigator.onLine 
+          ? "You're offline. Please connect to the internet to view dashboard." 
+          : (err.response?.data?.message || 'Something went wrong. Please try again.')
+      );
     } finally {
       setLoading(false);
     }
@@ -157,7 +161,7 @@ const AdminDashboard = () => {
       <section className="admin-section">
         <h3>Recurring Issues</h3>
         {recurring.length === 0 ? (
-          <p className="empty-state">No recurring issues detected.</p>
+          <p className="empty-state">No recurring issues found.</p>
         ) : (
           <div className="admin-table-wrapper">
             <table className="admin-table">
@@ -261,7 +265,7 @@ const AdminDashboard = () => {
       <section className="admin-section">
         <h3>Follow-up Required (30+ Days Unresolved)</h3>
         {followUpComplaints.length === 0 ? (
-          <p className="empty-state">No complaints currently require follow-up.</p>
+          <p className="empty-state">No complaints require follow-up.</p>
         ) : (
           <div className="admin-complaints-list">
             {followUpComplaints.map((complaint) => (

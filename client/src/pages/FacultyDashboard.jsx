@@ -84,7 +84,9 @@ const FacultyDashboard = () => {
       } catch (err) {
         console.error('Failed to load complaints:', err);
         setError(
-          err?.response?.data?.message || 'Failed to load complaints. Please try again.'
+          !navigator.onLine 
+            ? "You're offline. Please connect to the internet to view complaints." 
+            : (err?.response?.data?.message || 'Something went wrong. Please try again.')
         );
       } finally {
         setLoading(false);
