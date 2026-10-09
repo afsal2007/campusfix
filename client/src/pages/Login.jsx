@@ -37,7 +37,15 @@ const Login = () => {
       const response = await api.post('/auth/login', formData);
       const { token, user } = response.data;
       login(token, user);
-      navigate('/complaints');
+
+      // Redirect to the correct dashboard based on role
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'faculty') {
+        navigate('/faculty');
+      } else {
+        navigate('/complaints');
+      }
     } catch (err) {
       const msg = !navigator.onLine 
         ? "You're offline. Please connect to the internet to sign in." 
