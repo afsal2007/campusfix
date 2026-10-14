@@ -1,8 +1,8 @@
 # CampusFix Deployment & Production Readiness Guide
 
 > [!IMPORTANT]
-> **Status:** Backend Deployment Preparation (Day 15).
-> Local production-readiness has been validated. Deployment to the remote host requires pushing commits to GitHub and creating the service in the hosting dashboard.
+> **Status:** Backend Deployment Readiness & Render Setup (Day 17).
+> Backend production readiness, dynamic PORT assignment, credential-safe health checks, and CORS rules have been validated. Render deployment instructions and Atlas network access requirements are prepared.
 
 ---
 
@@ -10,13 +10,15 @@
 
 | Stage | Component | Status | Details |
 | :--- | :--- | :--- | :--- |
-| **Local Verification** | Backend Server (`server/`) | **Locally Verified** ✅ | `validateEnv`, dynamic `PORT`, credential-safe `/api/health`, and CORS all tested and passing. |
-| **Local Verification** | Frontend Build (`client/`) | **Locally Verified** ✅ | `npm run build` generates production bundle and PWA service worker with zero errors. |
-| **Git Synchronization** | Days 14 & 15 Code | **Pending Push** ⏳ | Code prepared locally; awaiting combined push of Day 14 and Day 15 to GitHub. |
-| **Cloud Hosting Setup** | Node.js PaaS (Render) | **Pending Dashboard Action** ⏳ | Render Web Service to be created and linked to the repository. |
+| **Local Verification** | Backend Server (`server/`) | **Locally Verified** ✅ | `validateEnv`, dynamic `PORT`, credential-safe `/api/health`, and CORS tested and passing. |
+| **Local Verification** | Frontend Build (`client/`) | **Locally Verified** ✅ | `npm run build` generates production bundle, manifest, and PWA service worker with zero errors. |
+| **SPA & PWA Config** | Vercel SPA Routing (`client/vercel.json`) | **Locally Configured** ✅ | Rewrites configured to route deep paths (`/login`, `/admin`, etc.) to `/index.html` while serving static assets and PWA files directly. |
+| **Git Synchronization** | Days 14, 15 & 16 Code | **Pending Push** ⏳ | Code prepared locally; awaiting user review and push to GitHub. |
+| **Cloud Hosting Setup** | Node.js PaaS (Render) | **Pending User Action** ⏳ | Render Web Service to be created; live backend URL required. |
 | **Cloud Database** | MongoDB Atlas Cluster | **Configured & Active** ✅ | Atlas cluster verified and reachable from backend. |
-| **Live Verification** | Backend Web Service | **Pending Live Deploy** ⏳ | Verification script `verify_live_deployment.js` ready to run once public URL is available. |
-| **Frontend Deployment** | Static Host (Vercel/Netlify) | **Scheduled for Day 16** 📅 | Client deployment planned for Day 16 after backend is verified live. |
+| **Backend Live Verification** | Backend Web Service | **Pending Live Deploy** ⏳ | Verification script `verify_live_deployment.js` ready to run once public URL is available. |
+| **Frontend Deployment** | Static Host (Vercel) | **Locally Prepared** ✅ | Settings, build scripts, SPA rewrites, and environment requirements documented and ready. |
+| **Live API Integration** | End-to-End CORS & Auth | **Pending Live Backend URL** ⏳ | Requires actual backend URL for `VITE_API_URL` and frontend origin for `CLIENT_URL`. |
 
 ---
 
@@ -178,3 +180,104 @@ This script performs 5 comprehensive checks:
 - [ ] Push local Days 14 & 15 commits to GitHub *(User action)*.
 - [ ] Create Render Web Service and configure environment variables *(User action)*.
 - [ ] Run live verification check against the deployed URL *(User action)*.
+
+---
+
+## 9. Step-by-Step Frontend Deployment Guide (Vercel)
+
+The CampusFix frontend is a React + Vite Single Page Application (PWA). Follow these steps to deploy it on [Vercel](https://vercel.com/):
+
+### Step 1: Import Project into Vercel
+1. Log into your Vercel account at [vercel.com](https://vercel.com/).
+2. Click **Add New...** → **Project**.
+3. Select and import the Git repository: `afsal2007/campusfix`.
+
+### Step 2: Configure Project Settings
+In the **Configure Project** setup screen:
+- **Project Name**: `campusfix` (or your preferred name)
+- **Framework Preset**: `Vite`
+- **Root Directory**: Click **Edit** and select **`client`** ⚠️ *(CRITICAL: Must point to `client`)*
+- **Build and Output Settings**:
+  - **Build Command**: `npm run build` (override if not auto-detected)
+  - **Output Directory**: `dist`
+  - **Install Command**: `npm install`
+
+### Step 3: Configure Environment Variables
+Under the **Environment Variables** section:
+- **Key**: `VITE_API_URL`
+- **Value**: `https://<YOUR-RENDER-BACKEND-SERVICE-NAME>.onrender.com/api`
+  > [!IMPORTANT]
+  > **Build-Time Ingestion Note**: Vite embeds environment variables prefixed with `VITE_` into the JavaScript bundle at **build time**. If the backend URL changes later, you must trigger a new deployment or rebuild in Vercel for the changes to take effect.
+  >
+  > **Security Reminder**: Never place server-side secrets (such as `JWT_SECRET` or `MONGO_URI`) into frontend environment variables. Only public client configurations belong in `VITE_*`.
+
+### Step 4: Single Page Application (SPA) Routing & PWA Compatibility
+To prevent HTTP 404 errors when refreshing direct nested routes (such as `/login`, `/admin`, `/faculty`, `/complaints`), the repository includes [`client/vercel.json`](file:///c:/Users/SMILE/Desktop/projects/campusfix/client/vercel.json):
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+- **Static Assets Precedence**: Vercel evaluates static output files in `dist` first. PWA assets (`manifest.webmanifest`, `sw.js`, `registerSW.js`, icons, CSS, and JS bundles) are served directly without redirection.
+- **Client-Side Routing**: Any unmatched path is routed to `index.html` with HTTP 200, allowing `react-router-dom` to render the correct view.
+
+---
+
+## 10. Live Integration & Verification Status
+
+> [!WARNING]
+> **Backend Status: Unverified / Pending Deployment**
+> Live login, authentication tokens, and API integration cannot be tested online until the backend is deployed to Render and its actual public URL is verified.
+> **Do not invent or assume a placeholder backend URL in production.**
+
+### Post-Backend Deployment Integration Checklist
+Once the backend is live on Render:
+1. **Set Frontend URL in Backend**:
+   - In the Render dashboard under **Environment Variables**, update `CLIENT_URL` with your actual Vercel domain (e.g., `https://campusfix.vercel.app`).
+   - This ensures the Express backend's CORS policy permits requests from your Vercel frontend.
+2. **Set Backend URL in Frontend**:
+   - In the Vercel dashboard under **Settings** → **Environment Variables**, ensure `VITE_API_URL` points to `https://<YOUR-RENDER-BACKEND>.onrender.com/api`.
+   - Redeploy the project so Vite bundles the live backend URL into the production build.
+3. **End-to-End Verification Flow**:
+   - [ ] Navigate to the Vercel production URL over HTTPS.
+   - [ ] Verify that the service worker activates and the PWA manifest is detected.
+   - [ ] Test direct navigation and refresh on `/login`, `/faculty`, and `/admin`.
+   - [ ] Sign in with test credentials and verify JWT storage in `localStorage`.
+   - [ ] Submit a test complaint and verify status updates in the dashboard.
+   - [ ] Check DevTools Network tab to confirm no CORS errors occur.
+
+---
+
+## 11. Summary Checklist for Day 16
+
+- [x] Frontend production build validated locally (`client/dist`).
+- [x] Centralized API client verified (`client/src/services/api.js` consumes `VITE_API_URL`).
+- [x] Vercel SPA routing configuration created (`client/vercel.json`).
+- [x] PWA manifest, service worker, and icons verified intact.
+- [x] Secret audit confirmed no credentials leaked into client bundle.
+- [x] HTML title updated to `CampusFix` in `client/index.html`.
+- [x] Vercel deployment guide and configuration documented.
+- [ ] Deploy backend to Render and verify live URL *(Pending User)*.
+- [ ] Connect `VITE_API_URL` in Vercel and `CLIENT_URL` in Render *(Pending User)*.
+
+---
+
+## 12. Summary Checklist for Day 17
+
+- [x] Inspected backend architecture (`package.json`, `server.js`, `validateEnv.js`, `db.js`, routes).
+- [x] Verified dynamic Render `PORT` binding (`process.env.PORT || 5000`) without hardcoded ports.
+- [x] Verified `/api/health` safety (returns `{ status, database, uptime, timestamp }` without leaking credentials).
+- [x] Verified required environment variables documented in `server/.env.example` (no secrets exposed).
+- [x] Verified Render configuration: Root Directory `server`, Build `npm install`, Start `npm start`.
+- [x] Verified MongoDB Atlas connection requirements and documented dynamic IP options and risks.
+- [x] Verified CORS origin configuration supporting production Vercel frontend origins.
+- [x] Ran non-destructive test suite (`server/scratch/verify_day17_render.js`) passing 13/13 checks.
+- [ ] Push local commits to GitHub *(User action)*.
+- [ ] Configure MongoDB Atlas Network Access allowlist *(User action)*.
+- [ ] Create Render Web Service and enter environment variables *(User action)*.
+- [ ] Verify live backend URL with `verify_live_deployment.js` *(User action / Next step)*.
